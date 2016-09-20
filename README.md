@@ -2,7 +2,7 @@
 Commercial detection script and add chapters original file
 
 ## Usage
-comchap inputfile [outputfile]
+`comchap inputfile [outputfile]`
 
 ### Remarks
 Comchap will read the input file specified to generate chapter information marking where commercials are located.
