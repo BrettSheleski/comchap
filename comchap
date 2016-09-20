@@ -61,7 +61,7 @@ fi
 
 start=0
 i=0
-
+hascommercials=false
 echo "writing meta"
 
 echo ";FFMETADATA1" > "$metafile"
@@ -71,10 +71,10 @@ while IFS=$'\t' read -r -a line
 do
   ((i++))
 
-  echo "$i"
-
   end="${line[0]}"
   startnext="${line[1]}"
+  hascommercials=true
+
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
   echo START="$start" >> "$metafile"
@@ -94,20 +94,22 @@ echo done readon EDL
 
 if $deleteedl ; then rm "$edlfile"; fi
 
-end=`ffprobe -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
+if $hascommercials ; then
 
-echo [CHAPTER] >> "$metafile"
-echo TIMEBASE=1/1 >> "$metafile"
-echo START="$start" >> "$metafile"
-echo END="$end" >> "$metafile"
-echo title=Chapter "$i" >> "$metafile"
+  end=`ffprobe -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
 
-tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
+  echo [CHAPTER] >> "$metafile"
+  echo TIMEBASE=1/1 >> "$metafile"
+  echo START="$start" >> "$metafile"
+  echo END="$end" >> "$metafile"
 
-echo Writing file to temporary file: "$tempfile"
-if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
-  mv -f "$tempfile" "$outfile"
-  echo Saved to: "$outfile"
+  tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
+
+  echo Writing file to temporary file: "$tempfile"
+  if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
+    mv -f "$tempfile" "$outfile"
+    echo Saved to: "$outfile"
+  fi
 fi
 
 if $deletemeta ; then rm "$metafile"; fi
