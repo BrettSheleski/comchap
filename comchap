@@ -4,9 +4,9 @@
 #set -e
 
 
-filename=`basename "$1"`
+#filename=`basename "$1"`
 infile=$1
-outfile="${filename%.*}.mp4"
+outfile=$infile
 
 if [[ $# -lt 1 ]]; then
 
@@ -26,18 +26,15 @@ else
   outfile=$2
 fi
 
-outfile=$infile
-
-
 comskipini=$HOME/.comskip.ini
 
+echo Source File: "$infile"
+echo Target File: "$outfile"
 echo INI FIle: "$comskipini"
 
 if [ ! -f "$comskipini" ]; then
-  touch "$comskipini"
-fi
-
-if grep -q "output_edl=1" "$comskipini"; then
+  echo "output_edl" > "$comskipini"
+elif grep -q "output_edl=1" "$comskipini"; then
   echo "output_edl=1" >> "$comskipini"
 fi
 
@@ -47,18 +44,19 @@ outdir=$(dirname "$outfile")
 
 outextension="${outfile##*.}"
 
-edlfile="${filename%.*}.edl"
-metafile="${filename%.*}.ffmeta"
+edlfile="${infile%.*}.edl"
+metafile="${infile%.*}.ffmeta"
 
 
-#echo mktemp --suffix="$outextension" "$outdir"/XXXXXXXX --suffix=."$outextension"
+echo EDL file: "$edlfile"
+echo ffmpeg metdata file: "$metafile"
 
 deleteedl=false
 deletemeta=false
 
 if [ ! -f "$edlfile" ]; then
   echo "EDL FILE DOES NOT EXIST"
-  comskip --ini="$comskipini" "\"$infile\""
+  comskip --ini="$comskipini" "$infile"
 fi
 
 start=0
@@ -81,7 +79,6 @@ do
   echo TIMEBASE=1/1 >> "$metafile"
   echo START="$start" >> "$metafile"
   echo END="$end" >> "$metafile"
-  echo title=Chapter "$i" >> "$metafile"
 
 
   echo [CHAPTER] >> "$metafile"
