@@ -1,0 +1,116 @@
+#!/bin/bash
+
+# stop the script if any command fails
+#set -e
+
+
+filename=`basename "$1"`
+infile=$1
+outfile="${filename%.*}.mp4"
+
+if [[ $# -lt 1 ]]; then
+
+  exename=$(basename "$0")
+
+  echo "Add chapters to video file using EDL file"
+  echo "     (If no EDL file is found, comskip will be used to generate one)"
+  echo ""
+  echo "Usage: $exename infile [outfile]"
+
+  exit 1
+fi
+
+if [[ $# -lt 2 ]]; then
+  outfile=$1
+else
+  outfile=$2
+fi
+
+outfile=$infile
+
+
+comskipini=$HOME/.comskip.ini
+
+echo INI FIle: "$comskipini"
+
+if [ ! -f "$comskipini" ]; then
+  touch "$comskipini"
+fi
+
+if grep -q "output_edl=1" "$comskipini"; then
+  echo "output_edl=1" >> "$comskipini"
+fi
+
+
+
+outdir=$(dirname "$outfile")
+
+outextension="${outfile##*.}"
+
+edlfile="${filename%.*}.edl"
+metafile="${filename%.*}.ffmeta"
+
+
+#echo mktemp --suffix="$outextension" "$outdir"/XXXXXXXX --suffix=."$outextension"
+
+deleteedl=false
+deletemeta=false
+
+if [ ! -f "$edlfile" ]; then
+  echo "EDL FILE DOES NOT EXIST"
+  comskip --ini="$comskipini" "\"$infile\""
+fi
+
+start=0
+i=0
+
+echo "writing meta"
+
+echo ";FFMETADATA1" > "$metafile"
+echo reading EDL file: "$edlfile"
+# Reads in from $edlfile, see end of loop.
+while IFS=$'\t' read -r -a line
+do
+  ((i++))
+
+  echo "$i"
+
+  end="${line[0]}"
+  startnext="${line[1]}"
+  echo [CHAPTER] >> "$metafile"
+  echo TIMEBASE=1/1 >> "$metafile"
+  echo START="$start" >> "$metafile"
+  echo END="$end" >> "$metafile"
+  echo title=Chapter "$i" >> "$metafile"
+
+
+  echo [CHAPTER] >> "$metafile"
+  echo TIMEBASE=1/1 >> "$metafile"
+  echo START="$end" >> "$metafile"
+  echo END="$startnext" >> "$metafile"
+  echo title=Commercial >> "$metafile"
+
+  start=$startnext
+done < "$edlfile"
+
+echo done readon EDL
+
+if $deleteedl ; then rm "$edlfile"; fi
+
+end=`ffprobe -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
+
+echo [CHAPTER] >> "$metafile"
+echo TIMEBASE=1/1 >> "$metafile"
+echo START="$start" >> "$metafile"
+echo END="$end" >> "$metafile"
+echo title=Chapter "$i" >> "$metafile"
+
+tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
+
+echo Writing file to temporary file: "$tempfile"
+if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
+  mv -f "$tempfile" "$outfile"
+  echo Saved to: "$outfile"
+fi
+
+if $deletemeta ; then rm "$metafile"; fi
