@@ -31,13 +31,9 @@ fi
 
 comskipini=$HOME/.comskip.ini
 
-echo Source File: "$infile"
-echo Target File: "$outfile"
-echo INI FIle: "$comskipini"
-
 if [ ! -f "$comskipini" ]; then
   echo "output_edl" > "$comskipini"
-elif grep -q "output_edl=1" "$comskipini"; then
+elif [! grep -q "output_edl=1" "{$comskipini}" ]; then
   echo "output_edl=1" >> "$comskipini"
 fi
 
@@ -50,23 +46,16 @@ outextension="${outfile##*.}"
 edlfile="${infile%.*}.edl"
 metafile="${infile%.*}.ffmeta"
 
-#outfile="${infilefile##*/}.mp4"
-
-echo EDL file: "$edlfile"
-echo ffmpeg metdata file: "$metafile"
-
 deleteedl=false
 deletemeta=false
 
 if [ ! -f "$edlfile" ]; then
-  echo "EDL FILE DOES NOT EXIST"
   comskip --ini="$comskipini" "$infile"
 fi
 
 start=0
 i=0
 hascommercials=false
-echo "writing meta"
 
 echo ";FFMETADATA1" > "$metafile"
 echo reading EDL file: "$edlfile"
@@ -94,8 +83,6 @@ do
   start=$startnext
 done < "$edlfile"
 
-echo done readon EDL
-
 if $deleteedl ; then rm "$edlfile"; fi
 
 if $hascommercials ; then
@@ -110,7 +97,6 @@ if $hascommercials ; then
   tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
 
   echo Writing file to temporary file: "$tempfile"
-  echo COMMAND: "$ffmpegBin" -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"
   if "$ffmpegBin" -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
     mv -f "$tempfile" "$outfile"
     echo Saved to: "$outfile"
