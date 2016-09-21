@@ -1,12 +1,15 @@
 #!/bin/bash
 
-# stop the script if any command fails
-#set -e
 
+#LD_LIBRARY_PATH is set and will mess up ffmpeg, unset it, then re-set it when done
+ldPath=${LD_LIBRARY_PATH}
+unset LD_LIBRARY_PATH
 
-#filename=`basename "$1"`
 infile=$1
 outfile=$infile
+
+ffmpegBin="/usr/bin/ffmpeg"
+ffprobeBin=" /usr/bin/ffprobe"
 
 if [[ $# -lt 1 ]]; then
 
@@ -47,6 +50,7 @@ outextension="${outfile##*.}"
 edlfile="${infile%.*}.edl"
 metafile="${infile%.*}.ffmeta"
 
+#outfile="${infilefile##*/}.mp4"
 
 echo EDL file: "$edlfile"
 echo ffmpeg metdata file: "$metafile"
@@ -96,7 +100,7 @@ if $deleteedl ; then rm "$edlfile"; fi
 
 if $hascommercials ; then
 
-  end=`ffprobe -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
+  end=`"$ffprobeBin" -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
 
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
@@ -106,10 +110,16 @@ if $hascommercials ; then
   tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
 
   echo Writing file to temporary file: "$tempfile"
-  if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
+  echo COMMAND: "$ffmpegBin" -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"
+  if "$ffmpegBin" -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
     mv -f "$tempfile" "$outfile"
     echo Saved to: "$outfile"
   fi
 fi
 
 if $deletemeta ; then rm "$metafile"; fi
+
+if [ ! -z ] ; then
+  #re-set LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH="$ldPath"
+fi
