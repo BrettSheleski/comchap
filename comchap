@@ -8,8 +8,10 @@ unset LD_LIBRARY_PATH
 infile=$1
 outfile=$infile
 
-ffmpegBin="/usr/bin/ffmpeg"
-ffprobeBin=" /usr/bin/ffprobe"
+exitcode=0
+
+#ffmpegBin="/usr/bin/ffmpeg"
+#ffprobeBin=" /usr/bin/ffprobe"
 
 if [[ $# -lt 1 ]]; then
 
@@ -24,24 +26,21 @@ if [[ $# -lt 1 ]]; then
 fi
 
 if [[ $# -lt 2 ]]; then
-  outfile=$1
+  outfile="$1"
 else
-  outfile=$2
+  outfile="$2"
 fi
 
 comskipini=$HOME/.comskip.ini
 
 echo Source File: "$infile"
 echo Target File: "$outfile"
-echo INI FIle: "$comskipini"
 
 if [ ! -f "$comskipini" ]; then
   echo "output_edl" > "$comskipini"
-elif grep -q "output_edl=1" "$comskipini"; then
+elif ! grep -q "output_edl=1" "$comskipini"; then
   echo "output_edl=1" >> "$comskipini"
 fi
-
-
 
 outdir=$(dirname "$outfile")
 
@@ -49,8 +48,6 @@ outextension="${outfile##*.}"
 
 edlfile="${infile%.*}.edl"
 metafile="${infile%.*}.ffmeta"
-
-#outfile="${infilefile##*/}.mp4"
 
 echo EDL file: "$edlfile"
 echo ffmpeg metdata file: "$metafile"
@@ -94,32 +91,52 @@ do
   start=$startnext
 done < "$edlfile"
 
-echo done readon EDL
-
 if $deleteedl ; then rm "$edlfile"; fi
 
 if $hascommercials ; then
 
-  end=`"$ffprobeBin" -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
+  end=`ffprobe -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
 
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
   echo START="$start" >> "$metafile"
   echo END="$end" >> "$metafile"
 
-  tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
+  if [ "$infile" -ef "$outfile" ] ; then
 
-  echo Writing file to temporary file: "$tempfile"
-  echo COMMAND: "$ffmpegBin" -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"
-  if "$ffmpegBin" -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
-    mv -f "$tempfile" "$outfile"
-    echo Saved to: "$outfile"
+    tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
+
+    echo Writing file to temporary file: "$tempfile"
+    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
+      mv -f "$tempfile" "$outfile"
+      echo Saved to: "$outfile"
+    else
+      exitcode=-1
+    fi
+
+  else
+    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$outfile"; then
+      echo Saved to: "$outfile"
+    else
+      exitcode=-1
+    fi
   fi
+elif [ ! "$infile" -ef "$outfile" ] ; then
+
+    if ffmpeg -i "$infile" -acodec copy -vcodec copy -y "$outfile"; then
+      echo Saved to: "$outfile"
+    else
+      exitcode=-1
+    fi
+else
+  echo No Commercials found, and not saving to new location.  Nothing to do.
 fi
 
 if $deletemeta ; then rm "$metafile"; fi
 
-if [ ! -z ] ; then
+if [ ! -z $ldPath ] ; then
   #re-set LD_LIBRARY_PATH
   export LD_LIBRARY_PATH="$ldPath"
 fi
+
+exit $exitcode
