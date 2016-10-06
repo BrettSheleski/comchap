@@ -10,9 +10,6 @@ outfile=$infile
 
 exitcode=0
 
-#ffmpegBin="/usr/bin/ffmpeg"
-#ffprobeBin=" /usr/bin/ffprobe"
-
 if [[ $# -lt 1 ]]; then
 
   exename=$(basename "$0")
@@ -33,9 +30,6 @@ fi
 
 comskipini=$HOME/.comskip.ini
 
-echo Source File: "$infile"
-echo Target File: "$outfile"
-
 if [ ! -f "$comskipini" ]; then
   echo "output_edl" > "$comskipini"
 elif ! grep -q "output_edl=1" "$comskipini"; then
@@ -49,24 +43,18 @@ outextension="${outfile##*.}"
 edlfile="${infile%.*}.edl"
 metafile="${infile%.*}.ffmeta"
 
-echo EDL file: "$edlfile"
-echo ffmpeg metdata file: "$metafile"
-
 deleteedl=false
 deletemeta=false
 
 if [ ! -f "$edlfile" ]; then
-  echo "EDL FILE DOES NOT EXIST"
   comskip --ini="$comskipini" "$infile"
 fi
 
 start=0
 i=0
 hascommercials=false
-echo "writing meta"
 
 echo ";FFMETADATA1" > "$metafile"
-echo reading EDL file: "$edlfile"
 # Reads in from $edlfile, see end of loop.
 while IFS=$'\t' read -r -a line
 do
@@ -94,13 +82,9 @@ done < "$edlfile"
 if $deleteedl ; then rm "$edlfile"; fi
 
 if $hascommercials ; then
-
-  end=`ffprobe -i "$infile" -show_entries format=duration -v quiet -of csv="p=0"`
-
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
   echo START="$start" >> "$metafile"
-  echo END="$end" >> "$metafile"
 
   if [ "$infile" -ef "$outfile" ] ; then
 
@@ -113,7 +97,6 @@ if $hascommercials ; then
     else
       exitcode=-1
     fi
-
   else
     if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$outfile"; then
       echo Saved to: "$outfile"
