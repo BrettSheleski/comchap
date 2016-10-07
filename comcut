@@ -57,7 +57,9 @@ hascommercials=false
 concat=""
 
 tempfiles=()
+totalcutduration=0
 
+echo ";FFMETADATA1" > "$metafile"
 # Reads in from $edlfile, see end of loop.
 while IFS=$'\t' read -r -a line
 do
@@ -66,7 +68,14 @@ do
   end="${line[0]}"
   duration=`echo "$end" - "$start" | bc`
   startnext="${line[1]}"
+  totalcutduration=`echo "$totalcutduration" + "$startnext" - "$end" | bc`
+
   hascommercials=true
+
+  echo [CHAPTER] >> "$metafile"
+  echo TIMEBASE=1/1 >> "$metafile"
+  echo START=`echo "$start" - "$totalcutduration" | bc` >> "$metafile"
+  echo END=`echo "$end" - "$totalcutduration" | bc` >> "$metafile"
 
   chapterfile=`mktemp --suffix=.ts "$outdir"/chapter-"$i"-XXXXXXXX`
   tempfiles+=("$chapterfile")
@@ -79,8 +88,8 @@ do
 done < "$edlfile"
 
 if $hascommercials ; then
-  echo ffmpeg -nostdin -i "'concat:${concat:1}'" -c copy -map_metadata -1 "$outfile"
-  ffmpeg -nostdin -i "concat:${concat:1}" -c copy -map_metadata -1 "$outfile"
+  echo ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 "$outfile"
+  ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 "$outfile"
 fi
 
 for i in "${tempfiles[@]}"
