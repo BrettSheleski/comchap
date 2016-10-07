@@ -1,0 +1,116 @@
+#!/bin/bash
+
+
+#LD_LIBRARY_PATH is set and will mess up ffmpeg, unset it, then re-set it when done
+ldPath=${LD_LIBRARY_PATH}
+unset LD_LIBRARY_PATH
+
+infile=$1
+outfile=$infile
+
+exitcode=0
+
+if [[ $# -lt 1 ]]; then
+
+  exename=$(basename "$0")
+
+  echo "Add chapters to video file using EDL file"
+  echo "     (If no EDL file is found, comskip will be used to generate one)"
+  echo ""
+  echo "Usage: $exename infile [outfile]"
+
+  exit 1
+fi
+
+if [[ $# -lt 2 ]]; then
+  outfile="$1"
+else
+  outfile="$2"
+fi
+
+comskipini=$HOME/.comskip.ini
+
+if [ ! -f "$comskipini" ]; then
+  echo "output_edl" > "$comskipini"
+elif ! grep -q "output_edl=1" "$comskipini"; then
+  echo "output_edl=1" >> "$comskipini"
+fi
+
+outdir=$(dirname "$outfile")
+
+outextension="${outfile##*.}"
+
+edlfile="${infile%.*}.edl"
+metafile="${infile%.*}.ffmeta"
+
+deleteedl=false
+deletemeta=false
+
+if [ ! -f "$edlfile" ]; then
+  comskip --ini="$comskipini" "$infile"
+fi
+
+start=0
+i=0
+hascommercials=false
+
+# Reads in from $edlfile, see end of loop.
+while IFS=$'\t' read -r -a line
+do
+  ((i++))
+
+  end="${line[0]}"
+  duration=$(($end - $start))
+  startnext="${line[1]}"
+  hascommercials=true
+
+  tempfile=`mktemp --suffix=."$outextension" "$outdir"/chapter-"$i"-XXXXXXXX`
+  
+  ffmpeg -i "$infile" -ss "$start" -t "$duration" -acodec copy -vcodec copy -y "$tempfile" 
+
+  start=$startnext
+done < "$edlfile"
+
+exit
+
+if $deleteedl ; then rm "$edlfile"; fi
+
+if $hascommercials ; then
+  
+  if [ "$infile" -ef "$outfile" ] ; then
+
+    tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
+
+    echo Writing file to temporary file: "$tempfile"
+    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
+      mv -f "$tempfile" "$outfile"
+      echo Saved to: "$outfile"
+    else
+      exitcode=-1
+    fi
+  else
+    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$outfile"; then
+      echo Saved to: "$outfile"
+    else
+      exitcode=-1
+    fi
+  fi
+elif [ ! "$infile" -ef "$outfile" ] ; then
+
+    if ffmpeg -i "$infile" -acodec copy -vcodec copy -y "$outfile"; then
+      echo Saved to: "$outfile"
+    else
+      exitcode=-1
+    fi
+else
+  echo No Commercials found, and not saving to new location.  Nothing to do.
+fi
+
+if $deletemeta ; then rm "$metafile"; fi
+
+if [ ! -z $ldPath ] ; then
+  #re-set LD_LIBRARY_PATH
+  export LD_LIBRARY_PATH="$ldPath"
+fi
+
+exit $exitcode
