@@ -78,47 +78,17 @@ do
   start=$startnext
 done < "$edlfile"
 
-echo ffmpeg -nostdin -i "'concat:${concat:1}'" -c copy -map_metadata -1 test.mp4
-#ffmpeg -nostdin -f concat -i "$chaptersfile" -c copy -map_metadata -1 test.mp4
+if $hascommercials ; then
+  echo ffmpeg -nostdin -i "'concat:${concat:1}'" -c copy -map_metadata -1 "$outfile"
+  ffmpeg -nostdin -f concat -i "$chaptersfile" -c copy -map_metadata -1 "$outfile"
+fi
 
 for i in "${tempfiles[@]}"
 do
   rm "$i"
 done
 
-exit
-
 if $deleteedl ; then rm "$edlfile"; fi
-
-if $hascommercials ; then
-  if [ "$infile" -ef "$outfile" ] ; then
-
-    tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
-
-    echo Writing file to temporary file: "$tempfile"
-    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
-      mv -f "$tempfile" "$outfile"
-      echo Saved to: "$outfile"
-    else
-      exitcode=-1
-    fi
-  else
-    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$outfile"; then
-      echo Saved to: "$outfile"
-    else
-      exitcode=-1
-    fi
-  fi
-elif [ ! "$infile" -ef "$outfile" ] ; then
-
-    if ffmpeg -i "$infile" -acodec copy -vcodec copy -y "$outfile"; then
-      echo Saved to: "$outfile"
-    else
-      exitcode=-1
-    fi
-else
-  echo No Commercials found, and not saving to new location.  Nothing to do.
-fi
 
 if $deletemeta ; then rm "$metafile"; fi
 
@@ -126,5 +96,3 @@ if [ ! -z $ldPath ] ; then
   #re-set LD_LIBRARY_PATH
   export LD_LIBRARY_PATH="$ldPath"
 fi
-
-exit $exitcode
