@@ -80,7 +80,7 @@ done < "$edlfile"
 
 if $hascommercials ; then
   echo ffmpeg -nostdin -i "'concat:${concat:1}'" -c copy -map_metadata -1 "$outfile"
-  ffmpeg -nostdin -f concat -i "$chaptersfile" -c copy -map_metadata -1 "$outfile"
+  ffmpeg -nostdin -i "concat:${concat:1}" -c copy -map_metadata -1 "$outfile"
 fi
 
 for i in "${tempfiles[@]}"
