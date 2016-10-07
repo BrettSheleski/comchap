@@ -60,7 +60,7 @@ do
   ((i++))
 
   end="${line[0]}"
-  duration=$(($end - $start))
+  duration=$((end-start))
   startnext="${line[1]}"
   hascommercials=true
 
