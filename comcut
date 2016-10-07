@@ -56,6 +56,8 @@ hascommercials=false
 
 concat=""
 
+tempfiles=()
+
 # Reads in from $edlfile, see end of loop.
 while IFS=$'\t' read -r -a line
 do
@@ -66,17 +68,23 @@ do
   startnext="${line[1]}"
   hascommercials=true
 
-  chapterfile=`mktemp --suffix=."$outextension" "$outdir"/chapter-"$i"-XXXXXXXX`
+  chapterfile=`mktemp --suffix=.ts "$outdir"/chapter-"$i"-XXXXXXXX`
+  tempfiles+=("$chapterfile")
   concat="$concat|$chapterfile"
 
-  echo ffmpeg -nostdin -i "\"$infile\"" -ss "$start" -t "$duration" -codec copy -y "$chapterfile"
-  ffmpeg -nostdin -i "$infile" -ss "$start" -t "$duration" -codec copy -y "$chapterfile"
+  echo ffmpeg -nostdin -i "\"$infile\"" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
+  ffmpeg -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
 
   start=$startnext
 done < "$edlfile"
 
-echo ffmpeg -nostdin -i concat:"${concat:1}" -codec copy test.mp4
-ffmpeg -nostdin -i concat:"${concat:1}" -codec copy test.mp4
+echo ffmpeg -nostdin -i "'concat:${concat:1}'" -c copy -map_metadata -1 test.mp4
+#ffmpeg -nostdin -f concat -i "$chaptersfile" -c copy -map_metadata -1 test.mp4
+
+for i in "${tempfiles[@]}"
+do
+  rm "$i"
+done
 
 exit
 
