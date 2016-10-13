@@ -13,3 +13,11 @@ When generating an EDL file Comchap will specify Comskip to use an ini file loca
 
 
 
+# Comcut
+Commercial detection and removal script
+
+## Usage
+`comcut inputfile [outputfile]`
+
+### Remarks
+Comcut will read the input file specified and remove detected commercials.  It no output file is specified, it will overwrite the input file, otherwise it will write to the output file.
