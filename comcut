@@ -14,7 +14,7 @@ if [[ $# -lt 1 ]]; then
 
   exename=$(basename "$0")
 
-  echo "Add chapters to video file using EDL file"
+  echo "Remove commercial from video file using EDL file"
   echo "     (If no EDL file is found, comskip will be used to generate one)"
   echo ""
   echo "Usage: $exename infile [outfile]"
@@ -68,7 +68,6 @@ do
   end="${line[0]}"
   duration=`echo "$end" - "$start" | bc`
   startnext="${line[1]}"
-  totalcutduration=`echo "$totalcutduration" + "$startnext" - "$end" | bc`
 
   hascommercials=true
 
@@ -84,12 +83,13 @@ do
   echo ffmpeg -nostdin -i "\"$infile\"" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
   ffmpeg -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
 
+  totalcutduration=`echo "$totalcutduration" + "$startnext" - "$end" | bc`
   start=$startnext
 done < "$edlfile"
 
 if $hascommercials ; then
-  echo ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 "$outfile"
-  ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 "$outfile"
+  echo ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
+  ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
 fi
 
 for i in "${tempfiles[@]}"
