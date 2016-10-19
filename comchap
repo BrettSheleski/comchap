@@ -42,9 +42,15 @@ outextension="${outfile##*.}"
 
 edlfile="${infile%.*}.edl"
 metafile="${infile%.*}.ffmeta"
+logfile="${infile%.*}.log"
+logofile="${infile%.*}.logo.txt"
+txtfile="${infile%.*}.txt"
 
-deleteedl=false
-deletemeta=false
+deleteedl=true
+deletemeta=true
+deletelog=true
+deletelogo=true
+deletetxt=true
 
 if [ ! -f "$edlfile" ]; then
   comskip --ini="$comskipini" "$infile"
@@ -115,7 +121,15 @@ else
   echo No Commercials found, and not saving to new location.  Nothing to do.
 fi
 
+if $deleteedl ; then rm "$edlfile"; fi
+
 if $deletemeta ; then rm "$metafile"; fi
+
+if $deletelog ; then rm "$logfile"; fi
+
+if $deletelogo ; then rm "$logofile"; fi
+
+if $deletetxt ; then rm "$txtfile"; fi
 
 if [ ! -z $ldPath ] ; then
   #re-set LD_LIBRARY_PATH
