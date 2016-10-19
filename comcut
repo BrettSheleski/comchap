@@ -1,14 +1,13 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 
 #LD_LIBRARY_PATH is set and will mess up ffmpeg, unset it, then re-set it when done
 ldPath=${LD_LIBRARY_PATH}
 unset LD_LIBRARY_PATH
 
-infile=$1
-outfile=$infile
-
 exitcode=0
+
+ffmpegPath="ffmpeg"
+comskipPath="comskip"
 
 if [[ $# -lt 1 ]]; then
 
@@ -22,18 +21,61 @@ if [[ $# -lt 1 ]]; then
   exit 1
 fi
 
-if [[ $# -lt 2 ]]; then
-  outfile="$1"
-else
-  outfile="$2"
-fi
-
 comskipini=$HOME/.comskip.ini
 
 if [ ! -f "$comskipini" ]; then
   echo "output_edl" > "$comskipini"
 elif ! grep -q "output_edl=1" "$comskipini"; then
   echo "output_edl=1" >> "$comskipini"
+fi
+
+deleteedl=true
+deletemeta=true
+deletelog=true
+deletelogo=true
+deletetxt=true
+lockfile=""
+
+while [[ $# -gt 1 ]]
+do
+key="$1"
+case $key in
+    --keep-edl)
+    deleteedl=false
+    ;;
+    --keep-meta)
+    deletemeta=false
+    ;;
+    --ffmpeg=*)
+    ffmpegPath="${key#*=}"
+    shift
+    ;;
+    --lockfile=*)
+    lockfile="${key#*=}"
+    shift
+    ;;
+esac
+shift # past argument or value
+done
+
+if [ ! -z "$lockfile" ]; then
+
+  echo "lockfile: $lockfile"
+  while [[ -f "$lockfile" ]]; do
+    echo "Waiting"
+    sleep 5
+  done
+
+  touch "$lockfile"
+fi
+
+infile=$1
+outfile=$infile
+
+if [[ -z "$2" ]]; then
+  outfile="$infile"
+else
+  outfile="$2"
 fi
 
 outdir=$(dirname "$outfile")
@@ -46,14 +88,8 @@ logfile="${infile%.*}.log"
 logofile="${infile%.*}.logo.txt"
 txtfile="${infile%.*}.txt"
 
-deleteedl=true
-deletemeta=true
-deletelog=true
-deletelogo=true
-deletetxt=true
-
 if [ ! -f "$edlfile" ]; then
-  comskip --ini="$comskipini" "$infile"
+  $comskipPath --ini="$comskipini" "$infile"
 fi
 
 start=0
@@ -87,7 +123,7 @@ do
   concat="$concat|$chapterfile"
 
   #echo ffmpeg -nostdin -i "\"$infile\"" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
-  ffmpeg -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
+  $ffmpegPath -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
 
   totalcutduration=`echo "$totalcutduration" + "$startnext" - "$end" | bc`
   start=$startnext
@@ -95,7 +131,7 @@ done < "$edlfile"
 
 if $hascommercials ; then
   #echo ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
-  ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
+  $ffmpegPath -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
 fi
 
 for i in "${tempfiles[@]}"
@@ -103,17 +139,41 @@ do
   rm "$i"
 done
 
-if $deleteedl ; then rm "$edlfile"; fi
+if $deleteedl ; then
+  if [ -f "$edlfile" ] ; then
+    rm "$edlfile";
+  fi
+fi
 
-if $deletemeta ; then rm "$metafile"; fi
+if $deletemeta ; then
+  if [ -f "$metafile" ]; then
+    rm "$metafile";
+  fi
+fi
 
-if $deletelog ; then rm "$logfile"; fi
+if $deletelog ; then
+  if [ -f "$logfile" ]; then
+    rm "$logfile";
+  fi
+fi
 
-if $deletelogo ; then rm "$logofile"; fi
+if $deletelogo ; then
+  if [ -f "$logofile" ]; then
+    rm "$logofile";
+  fi
+fi
 
-if $deletetxt ; then rm "$txtfile"; fi
+if $deletetxt ; then
+  if [ -f "$txtfile" ]; then
+    rm "$txtfile";
+  fi
+fi
 
 if [ ! -z $ldPath ] ; then
   #re-set LD_LIBRARY_PATH
   export LD_LIBRARY_PATH="$ldPath"
+fi
+
+if [ ! -z "$lockfile" ]; then
+  rm "$lockfile"
 fi
