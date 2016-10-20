@@ -1,14 +1,13 @@
-#!/bin/bash
-
+#!/usr/bin/env bash
 
 #LD_LIBRARY_PATH is set and will mess up ffmpeg, unset it, then re-set it when done
 ldPath=${LD_LIBRARY_PATH}
 unset LD_LIBRARY_PATH
 
-infile=$1
-outfile=$infile
-
 exitcode=0
+
+ffmpegPath="ffmpeg"
+comskipPath="comskip"
 
 if [[ $# -lt 1 ]]; then
 
@@ -22,18 +21,65 @@ if [[ $# -lt 1 ]]; then
   exit 1
 fi
 
-if [[ $# -lt 2 ]]; then
-  outfile="$1"
-else
-  outfile="$2"
-fi
-
 comskipini=$HOME/.comskip.ini
+
+deleteedl=true
+deletemeta=true
+deletelog=true
+deletelogo=true
+deletetxt=true
+lockfile=""
+
+while [[ $# -gt 1 ]]
+do
+key="$1"
+case $key in
+    --keep-edl)
+    deleteedl=false
+    ;;
+    --keep-meta)
+    deletemeta=false
+    ;;
+    --ffmpeg=*)
+    ffmpegPath="${key#*=}"
+    ;;
+    --comskip=*)
+    comskipPath="${key#*=}"
+    ;;
+    --comskip-ini=*)
+    comskipini="${key#*=}"
+    ;;
+    --lockfile=*)
+    lockfile="${key#*=}"
+    ;;
+esac
+shift # past argument or value
+done
+
+if [ ! -z "$lockfile" ]; then
+
+  echo "lockfile: $lockfile"
+  while [[ -f "$lockfile" ]]; do
+    echo "Waiting"
+    sleep 5
+  done
+
+  touch "$lockfile"
+fi
 
 if [ ! -f "$comskipini" ]; then
   echo "output_edl" > "$comskipini"
 elif ! grep -q "output_edl=1" "$comskipini"; then
   echo "output_edl=1" >> "$comskipini"
+fi
+
+infile=$1
+outfile=$infile
+
+if [[ -z "$2" ]]; then
+  outfile="$infile"
+else
+  outfile="$2"
 fi
 
 outdir=$(dirname "$outfile")
@@ -46,14 +92,8 @@ logfile="${infile%.*}.log"
 logofile="${infile%.*}.logo.txt"
 txtfile="${infile%.*}.txt"
 
-deleteedl=true
-deletemeta=true
-deletelog=true
-deletelogo=true
-deletetxt=true
-
 if [ ! -f "$edlfile" ]; then
-  comskip --ini="$comskipini" "$infile"
+  $comskipPath --ini="$comskipini" "$infile"
 fi
 
 start=0
@@ -85,8 +125,6 @@ do
   start=$startnext
 done < "$edlfile"
 
-if $deleteedl ; then rm "$edlfile"; fi
-
 if $hascommercials ; then
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
@@ -97,14 +135,14 @@ if $hascommercials ; then
     tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
 
     echo Writing file to temporary file: "$tempfile"
-    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
+    if $ffmpegPath -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$tempfile"; then
       mv -f "$tempfile" "$outfile"
       echo Saved to: "$outfile"
     else
       exitcode=-1
     fi
   else
-    if ffmpeg -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$outfile"; then
+    if $ffmpegPath -i "$infile" -i "$metafile" -map_metadata 1 -acodec copy -vcodec copy -y "$outfile"; then
       echo Saved to: "$outfile"
     else
       exitcode=-1
@@ -112,7 +150,7 @@ if $hascommercials ; then
   fi
 elif [ ! "$infile" -ef "$outfile" ] ; then
 
-    if ffmpeg -i "$infile" -acodec copy -vcodec copy -y "$outfile"; then
+    if $ffmpegPath -i "$infile" -acodec copy -vcodec copy -y "$outfile"; then
       echo Saved to: "$outfile"
     else
       exitcode=-1
@@ -121,19 +159,42 @@ else
   echo No Commercials found, and not saving to new location.  Nothing to do.
 fi
 
-if $deleteedl ; then rm "$edlfile"; fi
+if $deleteedl ; then
+  if [ -f "$edlfile" ] ; then
+    rm "$edlfile";
+  fi
+fi
 
-if $deletemeta ; then rm "$metafile"; fi
+if $deletemeta ; then
+  if [ -f "$metafile" ]; then
+    rm "$metafile";
+  fi
+fi
 
-if $deletelog ; then rm "$logfile"; fi
+if $deletelog ; then
+  if [ -f "$logfile" ]; then
+    rm "$logfile";
+  fi
+fi
 
-if $deletelogo ; then rm "$logofile"; fi
+if $deletelogo ; then
+  if [ -f "$logofile" ]; then
+    rm "$logofile";
+  fi
+fi
 
-if $deletetxt ; then rm "$txtfile"; fi
+if $deletetxt ; then
+  if [ -f "$txtfile" ]; then
+    rm "$txtfile";
+  fi
+fi
 
 if [ ! -z $ldPath ] ; then
   #re-set LD_LIBRARY_PATH
   export LD_LIBRARY_PATH="$ldPath"
 fi
 
-exit $exitcode
+if [ ! -z "$lockfile" ]; then
+  rm "$lockfile"
+fi
+
