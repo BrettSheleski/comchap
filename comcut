@@ -122,7 +122,7 @@ do
   echo START=`echo "$start" - "$totalcutduration" | bc` >> "$metafile"
   echo END=`echo "$end" - "$totalcutduration" | bc` >> "$metafile"
 
-  chapterfile=`mktemp --suffix=.ts "$outdir"/chapter-"$i"-XXXXXXXX`
+  chapterfile="${infile%.*}.part-$i.ts"
   tempfiles+=("$chapterfile")
   concat="$concat|$chapterfile"
 
