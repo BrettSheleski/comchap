@@ -23,12 +23,6 @@ fi
 
 comskipini=$HOME/.comskip.ini
 
-if [ ! -f "$comskipini" ]; then
-  echo "output_edl" > "$comskipini"
-elif ! grep -q "output_edl=1" "$comskipini"; then
-  echo "output_edl=1" >> "$comskipini"
-fi
-
 deleteedl=true
 deletemeta=true
 deletelog=true
@@ -48,11 +42,15 @@ case $key in
     ;;
     --ffmpeg=*)
     ffmpegPath="${key#*=}"
-    shift
+    ;;
+    --comskip=*)
+    comskipPath="${key#*=}"
+    ;;
+    --comskip-ini=*)
+    comskipini="${key#*=}"
     ;;
     --lockfile=*)
     lockfile="${key#*=}"
-    shift
     ;;
 esac
 shift # past argument or value
@@ -67,6 +65,12 @@ if [ ! -z "$lockfile" ]; then
   done
 
   touch "$lockfile"
+fi
+
+if [ ! -f "$comskipini" ]; then
+  echo "output_edl" > "$comskipini"
+elif ! grep -q "output_edl=1" "$comskipini"; then
+  echo "output_edl=1" >> "$comskipini"
 fi
 
 infile=$1
