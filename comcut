@@ -29,6 +29,7 @@ deletelog=true
 deletelogo=true
 deletetxt=true
 lockfile=""
+workdir=""
 
 while [[ $# -gt 1 ]]
 do
@@ -51,6 +52,9 @@ case $key in
     ;;
     --lockfile=*)
     lockfile="${key#*=}"
+    ;;
+    --work-dir=*)
+    workdir="${key#*=}"
     ;;
 esac
 shift # past argument or value
@@ -85,15 +89,29 @@ fi
 outdir=$(dirname "$outfile")
 
 outextension="${outfile##*.}"
+comskipoutput=""
 
-edlfile="${infile%.*}.edl"
-metafile="${infile%.*}.ffmeta"
-logfile="${infile%.*}.log"
-logofile="${infile%.*}.logo.txt"
-txtfile="${infile%.*}.txt"
+if [[ ! -z "$workdir" ]]; then
+  case "$workdir" in
+    */)
+      ;;
+    *)
+      comskipoutput="--output=$workdir"
+      workdir="$workdir/"
+      ;;
+  esac
+fi
+
+edlfile="$workdir${infile%.*}.edl"
+metafile="$workdir${infile%.*}.ffmeta"
+logfile="$workdir${infile%.*}.log"
+logofile="$workdir${infile%.*}.logo.txt"
+txtfile="$workdir${infile%.*}.txt"
+
+
 
 if [ ! -f "$edlfile" ]; then
-  $comskipPath --ini="$comskipini" "$infile"
+  $comskipPath $comskipoutput --ini="$comskipini" "$infile"
 fi
 
 start=0
@@ -123,6 +141,12 @@ do
   echo END=`echo "$end" - "$totalcutduration" | bc` >> "$metafile"
 
   chapterfile="${infile%.*}.part-$i.ts"
+
+  if [[ ! -z "$workdir" ]]; then
+    chapterfile=`basename "$chapterfile"`
+    chapterfile="$workdir$chapterfile"
+  fi
+
   tempfiles+=("$chapterfile")
   concat="$concat|$chapterfile"
 
