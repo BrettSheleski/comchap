@@ -58,6 +58,9 @@ case $key in
     lockfile="${key#*=}"
     shift
     ;;
+    *)
+    break
+    ;;
 esac
 done
 
