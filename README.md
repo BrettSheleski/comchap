@@ -35,12 +35,12 @@ Comcut will read the input file specified and remove detected commercials.  It n
 Comcut is very similar to Comchap, however the detected commercials are removed from the resulting file.  Chapters are still added to the resulting file.
 
 ### Command Line Arguments
-  `--keep-edl`           Keep the generated EDL file (do not delete when done)
-  `--keep-meta`          Keep the generated ffmeta file used to tell ffmpeg where the chapters are located
-  `--ffmpeg=PATH`        Use PATH as the path to ffmpeg binary
-  `--comskip=PATH`       Use PATH as the path to comskip binary
-  `--comskip-ini=PATH`   Use PATH as the path to the comskip.ini file used by Comskip
-  `--lockfile=PATH`      Use PATH as a lockfile to prevent multiple instances of the script from running simultaneously.
+-  `--keep-edl`           Keep the generated EDL file (do not delete when done)
+-  `--keep-meta`          Keep the generated ffmeta file used to tell ffmpeg where the chapters are located
+-  `--ffmpeg=PATH`        Use PATH as the path to ffmpeg binary
+-  `--comskip=PATH`       Use PATH as the path to comskip binary
+-  `--comskip-ini=PATH`   Use PATH as the path to the comskip.ini file used by Comskip
+-  `--lockfile=PATH`      Use PATH as a lockfile to prevent multiple instances of the script from running simultaneously.
                            Comchap will wait until PATH does not exist before doing any processing.
-  `--work-dir=PATH`      Use PATH as a directory to create any temporary files needed by Comskip and/or Comcut.
+-  `--work-dir=PATH`      Use PATH as a directory to create any temporary files needed by Comskip and/or Comcut.
                            If not specified it will use the current directory.
