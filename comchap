@@ -36,24 +36,29 @@ key="$1"
 case $key in
     --keep-edl)
     deleteedl=false
+    shift
     ;;
     --keep-meta)
     deletemeta=false
+    shift
     ;;
     --ffmpeg=*)
     ffmpegPath="${key#*=}"
+    shift
     ;;
     --comskip=*)
     comskipPath="${key#*=}"
+    shift
     ;;
     --comskip-ini=*)
     comskipini="${key#*=}"
+    shift
     ;;
     --lockfile=*)
     lockfile="${key#*=}"
+    shift
     ;;
 esac
-shift # past argument or value
 done
 
 if [ ! -z "$lockfile" ]; then
