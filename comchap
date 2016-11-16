@@ -145,14 +145,14 @@ if $hascommercials ; then
     tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
 
     echo Writing file to temporary file: "$tempfile"
-    if $ffmpegPath -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$tempfile"; then
+    if $ffmpegPath -nostdin -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$tempfile"; then
       mv -f "$tempfile" "$outfile"
       echo Saved to: "$outfile"
     else
       exitcode=-1
     fi
   else
-    if $ffmpegPath -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$outfile"; then
+    if $ffmpegPath -nostdin -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$outfile"; then
       echo Saved to: "$outfile"
     else
       exitcode=-1
@@ -160,7 +160,7 @@ if $hascommercials ; then
   fi
 elif [ ! "$infile" -ef "$outfile" ] ; then
 
-    if $ffmpegPath -i "$infile" -codec copy -y "$outfile"; then
+    if $ffmpegPath -nostdin -i "$infile" -codec copy -y "$outfile"; then
       echo Saved to: "$outfile"
     else
       exitcode=-1
