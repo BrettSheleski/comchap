@@ -152,7 +152,7 @@ if $hascommercials ; then
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
   echo START="$start" >> "$metafile"
-  echo END=`ffmpeg -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'` >> "$metafile"
+  echo END=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'` >> "$metafile"
   echo "title=Chapter $i" >> "$metafile"
 
   if [ "$infile" -ef "$outfile" ] ; then
