@@ -28,6 +28,7 @@ deletemeta=true
 deletelog=true
 deletelogo=true
 deletetxt=true
+verbose=false
 lockfile=""
 
 while [[ $# -gt 1 ]]
@@ -40,6 +41,10 @@ case $key in
     ;;
     --keep-meta)
     deletemeta=false
+    shift
+    ;;
+    --verbose)
+    verbose=true
     shift
     ;;
     --ffmpeg=*)
@@ -63,6 +68,15 @@ case $key in
     ;;
 esac
 done
+
+# Setup for verbose
+exec 3>&1
+exec 4>&2
+
+if ! $verbose; then
+  exec 1>/dev/null
+  exec 2>/dev/null
+fi
 
 if [ ! -z "$lockfile" ]; then
 
