@@ -32,6 +32,8 @@ sign: $(SIG)
 
 clean:
 	rm -f $(PKG) $(SIG)
+	rm -Rf $(PKG)/lib
+	rm -Rf $(PKG)/docs
 
 all: $(PKG) $(SIG)
 
