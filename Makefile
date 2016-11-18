@@ -31,9 +31,7 @@ $(SIG): $(PKG)
 sign: $(SIG)
 
 clean:
-	rm -f $(PKG) $(SIG)
-	rm -Rf $(PKG)/lib
-	rm -Rf $(PKG)/docs
+	rm -Rf $(PKG_DIR)
 
 all: $(PKG) $(SIG)
 
@@ -45,16 +43,16 @@ tag:
 
 release: $(PKG) $(SIG) tag
 
-install: 
-	for dir in $(INSTALL_DIRS); do mkdir -p $(PREFIX)/lib/$(NAME)/$$dir; done
-	for file in $(INSTALL_FILES); do cp $$file $(PREFIX)/lib/$(NAME)/$$file; done
+install:
+	mkdir -p $(PREFIX)/lib/$(NAME)
+	cp -rp $(PKG_DIR)/lib/* $(PREFIX)/lib/$(NAME)
 	mkdir -p $(DOC_DIR)
-	cp -r $(DOC_FILES) $(DOC_DIR)/
+	cp -r $(PKG_DIR)/docs $(DOC_DIR)/
 	ln -s $(PREFIX)/lib/$(NAME)/comchap $(PREFIX)/bin
 	ln -s $(PREFIX)/lib/$(NAME)/comcut $(PREFIX)/bin
 
 uninstall:
-	for file in $(INSTALL_FILES); do rm -f $(PREFIX)/$$file; done
+	rm -rf $(PREFIX)/lib/$(NAME)
 	rm -rf $(DOC_DIR)
 	rm -f $(PREFIX)/bin/comchap $(PREFIX)/bin/comcut
 
