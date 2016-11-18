@@ -147,8 +147,8 @@ do
 
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1 >> "$metafile"
-  echo START=`echo "$start" - "$totalcutduration" | bc` >> "$metafile"
-  echo END=`echo "$end" - "$totalcutduration" | bc` >> "$metafile"
+  echo START=`echo "$start" - "$totalcutduration" | bc | awk '{printf "%f", $0}'` >> "$metafile"
+  echo END=`echo "$end" - "$totalcutduration" | bc | awk '{printf "%f", $0}'` >> "$metafile"
 
   chapterfile="${infile%.*}.part-$i.ts"
 
