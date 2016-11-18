@@ -82,7 +82,7 @@ if [ ! -z "$lockfile" ]; then
 fi
 
 if [ ! -f "$comskipini" ]; then
-  echo "output_edl" > "$comskipini"
+  echo "output_edl=1" > "$comskipini"
 elif ! grep -q "output_edl=1" "$comskipini"; then
   echo "output_edl=1" >> "$comskipini"
 fi
