@@ -140,15 +140,15 @@ do
   ((i++))
 
   end="${line[0]}"
-  duration=`echo "$end" - "$start" | bc`
+  duration=`echo "$end" - "$start" | bc | awk '{printf "%f", $0}'`
   startnext="${line[1]}"
 
   hascommercials=true
 
   echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START=`echo "$start" - "$totalcutduration" | bc | awk '{printf "%f", $0}'` >> "$metafile"
-  echo END=`echo "$end" - "$totalcutduration" | bc | awk '{printf "%f", $0}'` >> "$metafile"
+  echo TIMEBASE=1/1000 >> "$metafile"
+  echo START=`echo "($start - $totalcutduration) * 1000" | bc | awk '{printf "%i", $0}'` >> "$metafile"
+  echo END=`echo "($end - $totalcutduration) * 1000" | bc | awk '{printf "%i", $0}'` >> "$metafile"
 
   chapterfile="${infile%.*}.part-$i.ts"
 
