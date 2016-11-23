@@ -123,7 +123,7 @@ if [ ! -f "$edlfile" ]; then
       rm "$lockfile"
     fi
 
-    exit exitcode
+    exit $exitcode
   fi
 fi
 
@@ -142,26 +142,27 @@ do
   hascommercials=true
 
   echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START="$start" >> "$metafile"
-  echo END="$end" >> "$metafile"
+  echo TIMEBASE=1/1000 >> "$metafile"
+  echo START=`echo "$start * 1000" | bc| awk '{printf "%i", $0}'` >> "$metafile"
+  echo END=`echo "$end * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
   echo "title=Chapter $i" >> "$metafile"
 
   echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START="$end" >> "$metafile"
-  echo END="$startnext" >> "$metafile"
+  echo TIMEBASE=1/1000 >> "$metafile"
+  echo START=`echo "$end * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
+  echo END=`echo "$startnext * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
   echo "title=Commercial $i" >> "$metafile"
 
   start=$startnext
 done < "$edlfile"
 
 if $hascommercials ; then
+  end=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'`
   ((i++))
   echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START="$start" >> "$metafile"
-  echo END=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'` >> "$metafile"
+  echo TIMEBASE=1/1000 >> "$metafile"
+  echo START=`echo "$start * 1000" | bc| awk '{printf "%i", $0}'` >> "$metafile"
+  echo END=`echo "$end * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
   echo "title=Chapter $i" >> "$metafile"
 
   if [ "$infile" -ef "$outfile" ] ; then
