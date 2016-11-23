@@ -1,5 +1,58 @@
 #!/usr/bin/env bash
 
+##############################
+# Functions
+
+function cleanup_ffmpeg {
+  if $deletemeta ; then
+    if [ -f "$metafile" ]; then
+      rm "$metafile";
+    fi
+  fi
+}
+
+function cleanup_comskip {
+  if $deleteedl ; then
+    if [ -f "$edlfile" ] ; then
+      rm "$edlfile";
+    fi
+  fi
+
+  if $deletelog ; then
+    if [ -f "$logfile" ]; then
+      rm "$logfile";
+    fi
+  fi
+
+  if $deletelogo ; then
+    if [ -f "$logofile" ]; then
+      rm "$logofile";
+    fi
+  fi
+
+  if $deletetxt ; then
+    if [ -f "$txtfile" ]; then
+      rm "$txtfile";
+    fi
+  fi
+}
+
+function cleanup_main {
+  if [ ! -z $ldPath ] ; then
+    #re-set LD_LIBRARY_PATH
+    export LD_LIBRARY_PATH="$ldPath"
+  fi
+
+  if [ ! -z "$lockfile" ]; then
+    rm "$lockfile"
+  fi
+
+  exit $exitcode
+}
+
+### End Functions
+###################################
+
 #LD_LIBRARY_PATH is set and will mess up ffmpeg, unset it, then re-set it when done
 ldPath=${LD_LIBRARY_PATH}
 unset LD_LIBRARY_PATH
@@ -80,9 +133,9 @@ fi
 
 if [ ! -z "$lockfile" ]; then
 
-  echo "lockfile: $lockfile"
+  echo "lockfile: $lockfile" 1>&3 2>&4
   while [[ -f "$lockfile" ]]; do
-    echo "Waiting"
+    echo "Waiting" 1>&3 2>&4
     sleep 5
   done
 
@@ -96,7 +149,6 @@ elif ! grep -q "output_edl=1" "$comskipini"; then
 fi
 
 infile=$1
-outfile=$infile
 
 if [[ -z "$2" ]]; then
   outfile="$infile"
@@ -116,110 +168,90 @@ txtfile="${infile%.*}.txt"
 
 if [ ! -f "$edlfile" ]; then
   $comskipPath --ini="$comskipini" "$infile"
+
+  if [ ! -f "$edlfile" ]; then
+    echo Error running comskip. 1>&3 2>&4 >&2
+    exitcode=-1
+    cleanup_comskip
+    cleanup_main
+  fi
 fi
 
-start=0
-i=0
-hascommercials=false
+if [ -s "$edlfile" ]; then
+  start=0
+  i=0
+  hascommercials=false
 
-echo ";FFMETADATA1" > "$metafile"
-# Reads in from $edlfile, see end of loop.
-while IFS=$'\t' read -r -a line
-do
-  ((i++))
+  echo ";FFMETADATA1" > "$metafile"
+  # Reads in from $edlfile, see end of loop.
+  while IFS=$'\t' read -r -a line
+    do
+    end="${line[0]}"
+    startnext="${line[1]}"
 
-  end="${line[0]}"
-  startnext="${line[1]}"
-  hascommercials=true
+    if [ ! -z "$end" ] && [ ! -z "$startnext" ]; then
+      ((i++))
+      hascommercials=true
 
-  echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START="$start" >> "$metafile"
-  echo END="$end" >> "$metafile"
-  echo "title=Chapter $i" >> "$metafile"
+      echo [CHAPTER] >> "$metafile"
+      echo TIMEBASE=1/1 >> "$metafile"
+      echo START="$start" >> "$metafile"
+      echo END="$end" >> "$metafile"
+      echo "title=Chapter $i" >> "$metafile"
 
-  echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START="$end" >> "$metafile"
-  echo END="$startnext" >> "$metafile"
-  echo "title=Commercial $i" >> "$metafile"
+      echo [CHAPTER] >> "$metafile"
+      echo TIMEBASE=1/1 >> "$metafile"
+      echo START="$end" >> "$metafile"
+      echo END="$startnext" >> "$metafile"
+      echo "title=Commercial $i" >> "$metafile"
 
-  start=$startnext
-done < "$edlfile"
+      start=$startnext
+    fi
+  done < "$edlfile"
 
-if $hascommercials ; then
-  ((i++))
-  echo [CHAPTER] >> "$metafile"
-  echo TIMEBASE=1/1 >> "$metafile"
-  echo START="$start" >> "$metafile"
-  echo END=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'` >> "$metafile"
-  echo "title=Chapter $i" >> "$metafile"
+  if $hascommercials ; then
+    ((i++))
+    echo [CHAPTER] >> "$metafile"
+    echo TIMEBASE=1/1 >> "$metafile"
+    echo START="$start" >> "$metafile"
+    echo END=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'` >> "$metafile"
+    echo "title=Chapter $i" >> "$metafile"
+        
+    if [ "$infile" -ef "$outfile" ] ; then
 
-  if [ "$infile" -ef "$outfile" ] ; then
+      tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
 
-    tempfile=`mktemp --suffix=."$outextension" "$outdir"/XXXXXXXX`
-
-    echo Writing file to temporary file: "$tempfile"
-    if $ffmpegPath -loglevel error -hide_banner -nostdin -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$tempfile" 1>&3 2>&4; then
-      mv -f "$tempfile" "$outfile"
-      echo Saved to: "$outfile"
+      echo Writing file to temporary file: "$tempfile"
+      if $ffmpegPath -loglevel error -hide_banner -nostdin -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$tempfile" 1>&3 2>&4; then
+        mv -f "$tempfile" "$outfile"
+        echo Saved to: "$outfile"
+      else
+        echo Error running ffmpeg. 1>&3 2>&4
+        exitcode=-1
+      fi
     else
+      if $ffmpegPath -loglevel error -hide_banner -nostdin -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$outfile" 1>&3 2>&4; then
+        echo Saved to: "$outfile"
+      else
+        echo Error running ffmpeg. 1>&3 2>&4
+        exitcode=-1
+      fi
+    fi
+       
+    if [ ! -f "$outfile" ]; then
+      echo Error, "$outfile" does not exist. 1>&3 2>&4
       exitcode=-1
     fi
+
+
   else
-    if $ffmpegPath -loglevel error -hide_banner -nostdin -i "$infile" -i "$metafile" -map_metadata 1 -codec copy -y "$outfile" 1>&3 2>&4; then
-      echo Saved to: "$outfile"
-    else
-      exitcode=-1
-    fi
+    echo No Commercials found, not saving to new location.  Nothing to do. 1>&3 2>&4 >&2
   fi
-elif [ ! "$infile" -ef "$outfile" ] ; then
 
-    if $ffmpegPath -loglevel error -hide_banner -nostdin -i "$infile" -codec copy -y "$outfile" 1>&3 2>&4; then
-      echo Saved to: "$outfile"
-    else
-      exitcode=-1
-    fi
+  cleanup_ffmpeg
 else
-  echo No Commercials found, and not saving to new location.  Nothing to do.
+  echo No Commercials found, not saving to new location.  Nothing to do. 1>&3 2>&4 >&2
 fi
 
-if $deleteedl ; then
-  if [ -f "$edlfile" ] ; then
-    rm "$edlfile";
-  fi
-fi
-
-if $deletemeta ; then
-  if [ -f "$metafile" ]; then
-    rm "$metafile";
-  fi
-fi
-
-if $deletelog ; then
-  if [ -f "$logfile" ]; then
-    rm "$logfile";
-  fi
-fi
-
-if $deletelogo ; then
-  if [ -f "$logofile" ]; then
-    rm "$logofile";
-  fi
-fi
-
-if $deletetxt ; then
-  if [ -f "$txtfile" ]; then
-    rm "$txtfile";
-  fi
-fi
-
-if [ ! -z $ldPath ] ; then
-  #re-set LD_LIBRARY_PATH
-  export LD_LIBRARY_PATH="$ldPath"
-fi
-
-if [ ! -z "$lockfile" ]; then
-  rm "$lockfile"
-fi
-
+cleanup_comskip
+cleanup_main
