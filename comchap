@@ -137,32 +137,31 @@ while IFS=$'\t' read -r -a line
 do
   ((i++))
 
-  end="${line[0]}"
-  startnext="${line[1]}"
+  end=`awk -vp="${line[0]}" 'BEGIN{printf "%.0f" ,p*1000}'`
+  startnext=`awk -vp="${line[1]}" 'BEGIN{printf "%.0f" ,p*1000}'`
   hascommercials=true
 
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1000 >> "$metafile"
-  echo START=`echo "$start * 1000" | bc| awk '{printf "%i", $0}'` >> "$metafile"
-  echo END=`echo "$end * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
+  echo START="$start" >> "$metafile"
+  echo END="$end" >> "$metafile"
   echo "title=Chapter $i" >> "$metafile"
 
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1000 >> "$metafile"
-  echo START=`echo "$end * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
-  echo END=`echo "$startnext * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
+  echo START="$end" >> "$metafile"
+  echo END="$startnext" >> "$metafile"
   echo "title=Commercial $i" >> "$metafile"
 
   start=$startnext
 done < "$edlfile"
 
 if $hascommercials ; then
-  end=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1 * 3600) + ($2 * 60) + $3 }'`
   ((i++))
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1000 >> "$metafile"
-  echo START=`echo "$start * 1000" | bc| awk '{printf "%i", $0}'` >> "$metafile"
-  echo END=`echo "$end * 1000" | bc | awk '{printf "%i", $0}'`>> "$metafile"
+  echo START="$start" >> "$metafile"
+  echo END=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1*3600)+($2*60)+$3 }'| awk '{printf "%.0f",$1*1000}'` >> "$metafile"
   echo "title=Chapter $i" >> "$metafile"
 
   if [ "$infile" -ef "$outfile" ] ; then
