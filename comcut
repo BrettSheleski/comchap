@@ -172,6 +172,35 @@ do
 done < "$edlfile"
 
 if $hascommercials ; then
+
+  #dont forget to add the final part from last commercial to end of file
+  end=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1*3600)+($2*60)+$3 }'| awk '{printf "%.0f",$1}'`
+
+  if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
+
+    hascommercials=true
+
+    echo [CHAPTER] >> "$metafile"
+    echo TIMEBASE=1/1000 >> "$metafile"
+    echo START=`echo "$start  $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
+    echo END=`echo "$end $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
+
+    chapterfile="${infile%.*}.part-$i.ts"
+
+    if [[ ! -z "$workdir" ]]; then
+      chapterfile=`basename "$chapterfile"`
+      chapterfile="$workdir$chapterfile"
+    fi
+
+    tempfiles+=("$chapterfile")
+    concat="$concat|$chapterfile"
+
+    $ffmpegPath -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
+
+    totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 + $2 - $3}'`
+
+  fi
+
   $ffmpegPath -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
 fi
 
