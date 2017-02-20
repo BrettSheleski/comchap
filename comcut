@@ -140,7 +140,7 @@ do
   ((i++))
 
   end="${line[0]}"
-  duration=`echo "$end" "$start" | awk  '{print $1 - $2}' | awk '{printf "%f", $0}'`
+  duration=`echo "$end" "$start" | awk  '{printf "%f", $1 - $2}'`
   startnext="${line[1]}"
 
   if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
@@ -149,8 +149,8 @@ do
 
     echo [CHAPTER] >> "$metafile"
     echo TIMEBASE=1/1000 >> "$metafile"
-    echo START=`echo "$start  $totalcutduration" | awk  '{print ($1 - $2) * 1000}' | awk '{printf "%i", $0}'` >> "$metafile"
-    echo END=`echo "$end $totalcutduration" | awk  '{print ($1 - $2) * 1000}' | awk '{printf "%i", $0}'` >> "$metafile"
+    echo START=`echo "$start  $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
+    echo END=`echo "$end $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
 
     chapterfile="${infile%.*}.part-$i.ts"
 
