@@ -162,7 +162,6 @@ do
     tempfiles+=("$chapterfile")
     concat="$concat|$chapterfile"
 
-    #echo ffmpeg -nostdin -i "\"$infile\"" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
     $ffmpegPath -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
 
     totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 + $2 - $3}'`
@@ -173,7 +172,6 @@ do
 done < "$edlfile"
 
 if $hascommercials ; then
-  #echo ffmpeg -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
   $ffmpegPath -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
 fi
 
