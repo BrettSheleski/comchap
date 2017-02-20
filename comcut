@@ -140,7 +140,6 @@ do
   ((i++))
 
   end="${line[0]}"
-  duration=`echo "$end" "$start" | awk  '{printf "%f", $1 - $2}'`
   startnext="${line[1]}"
 
   if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
@@ -162,7 +161,8 @@ do
     tempfiles+=("$chapterfile")
     concat="$concat|$chapterfile"
 
-    $ffmpegPath -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
+    duration=`echo "$end" "$start" | awk  '{printf "%f", $1 - $2}'`
+    $ffmpegPath -hide_banner -loglevel error -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
 
     totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 + $2 - $3}'`
 
@@ -174,11 +174,9 @@ done < "$edlfile"
 if $hascommercials ; then
 
   #dont forget to add the final part from last commercial to end of file
-  end=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1*3600)+($2*60)+$3 }'| awk '{printf "%.0f",$1}'`
+  end=`$ffmpegPath -hide_banner -loglevel error -nostdin -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ printf "%f", ($1*3600)+($2*60)+$3 }'`
 
   if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
-
-    hascommercials=true
 
     echo [CHAPTER] >> "$metafile"
     echo TIMEBASE=1/1000 >> "$metafile"
@@ -195,13 +193,11 @@ if $hascommercials ; then
     tempfiles+=("$chapterfile")
     concat="$concat|$chapterfile"
 
-    $ffmpegPath -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
-
-    totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 + $2 - $3}'`
-
+    duration=`echo "$end" "$start" | awk  '{printf "%f", $1 - $2}'`
+    $ffmpegPath -hide_banner -loglevel error -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
   fi
 
-  $ffmpegPath -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
+  $ffmpegPath -hide_banner -loglevel error -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
 fi
 
 for i in "${tempfiles[@]}"
