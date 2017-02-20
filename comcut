@@ -163,7 +163,7 @@ do
   #echo ffmpeg -nostdin -i "\"$infile\"" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
   $ffmpegPath -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
 
-  totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 - $2 - $3}'`
+  totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 + $2 - $3}'`
   start=$startnext
 done < "$edlfile"
 
