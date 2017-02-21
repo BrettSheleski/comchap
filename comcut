@@ -174,7 +174,7 @@ done < "$edlfile"
 if $hascommercials ; then
 
   #dont forget to add the final part from last commercial to end of file
-  end=`$ffmpegPath -hide_banner -loglevel error -nostdin -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ printf "%f", ($1*3600)+($2*60)+$3 }'`
+  end=`$ffmpegPath -hide_banner -nostdin -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ printf "%f", ($1*3600)+($2*60)+$3 }'`
 
   if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
 
