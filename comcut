@@ -178,6 +178,8 @@ if $hascommercials ; then
 
   if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
 
+    ((i++))
+
     echo [CHAPTER] >> "$metafile"
     echo TIMEBASE=1/1000 >> "$metafile"
     echo START=`echo "$start  $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
