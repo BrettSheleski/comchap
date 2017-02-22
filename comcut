@@ -137,12 +137,12 @@ echo ";FFMETADATA1" > "$metafile"
 # Reads in from $edlfile, see end of loop.
 while IFS=$'\t' read -r -a line
 do
-  ((i++))
 
   end="${line[0]}"
   startnext="${line[1]}"
 
   if [ `echo "$end" | awk '{printf "%i", $0 * 1000}'` -gt `echo "$start" | awk '{printf "%i", $0 * 1000}'` ]; then
+    ((i++))
 
     hascommercials=true
 
@@ -150,6 +150,7 @@ do
     echo TIMEBASE=1/1000 >> "$metafile"
     echo START=`echo "$start  $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
     echo END=`echo "$end $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
+    echo "title=Chapter $i" >> "$metafile"
 
     chapterfile="${infile%.*}.part-$i.ts"
 
@@ -184,6 +185,7 @@ if $hascommercials ; then
     echo TIMEBASE=1/1000 >> "$metafile"
     echo START=`echo "$start  $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
     echo END=`echo "$end $totalcutduration" | awk  '{printf "%i", ($1 - $2) * 1000}'` >> "$metafile"
+    echo "title=Chapter $i" >> "$metafile"
 
     chapterfile="${infile%.*}.part-$i.ts"
 
