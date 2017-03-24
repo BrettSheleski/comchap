@@ -48,8 +48,8 @@ install:
 	cp -rp $(PKG_DIR)/lib/* $(PREFIX)/lib/$(NAME)
 	mkdir -p $(DOC_DIR)
 	cp -r $(PKG_DIR)/docs $(DOC_DIR)/
-	ln -s $(PREFIX)/lib/$(NAME)/comchap $(PREFIX)/bin
-	ln -s $(PREFIX)/lib/$(NAME)/comcut $(PREFIX)/bin
+	ln -sf $(PREFIX)/lib/$(NAME)/comchap $(PREFIX)/bin
+	ln -sf $(PREFIX)/lib/$(NAME)/comcut $(PREFIX)/bin
 
 uninstall:
 	rm -rf $(PREFIX)/lib/$(NAME)
