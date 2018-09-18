@@ -110,14 +110,19 @@ if [[ ! -z "$workdir" ]]; then
       workdir="$workdir/"
       ;;
   esac
-fi
-
+infileb=`basename "$infile"`
+edlfile="$workdir${infileb%.*}.edl"
+metafile="$workdir${infileb%.*}.ffmeta"
+logfile="$workdir${infileb%.*}.log"
+logofile="$workdir${infileb%.*}.logo.txt"
+txtfile="$workdir${infileb%.*}.txt"
+else
 edlfile="$workdir${infile%.*}.edl"
 metafile="$workdir${infile%.*}.ffmeta"
 logfile="$workdir${infile%.*}.log"
 logofile="$workdir${infile%.*}.logo.txt"
 txtfile="$workdir${infile%.*}.txt"
-
+fi
 
 
 if [ ! -f "$edlfile" ]; then
