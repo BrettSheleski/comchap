@@ -30,6 +30,7 @@ deletelogo=true
 deletetxt=true
 verbose=false
 lockfile=""
+workdir=""
 
 while [[ $# -gt 1 ]]
 do
@@ -61,6 +62,10 @@ case $key in
     ;;
     --lockfile=*)
     lockfile="${key#*=}"
+    shift
+    ;;
+    --work-dir=*)
+    workdir="${key#*=}"
     shift
     ;;
     *)
@@ -107,11 +112,28 @@ outdir=$(dirname "$outfile")
 
 outextension="${outfile##*.}"
 
-edlfile="${infile%.*}.edl"
-metafile="${infile%.*}.ffmeta"
-logfile="${infile%.*}.log"
-logofile="${infile%.*}.logo.txt"
-txtfile="${infile%.*}.txt"
+if [[ ! -z "$workdir" ]]; then
+  case "$workdir" in
+    */)
+      ;;
+    *)
+      comskipoutput="--output=$workdir"
+      workdir="$workdir/"
+      ;;
+  esac
+infileb=`basename "$infile"`
+edlfile="$workdir${infileb%.*}.edl"
+metafile="$workdir${infileb%.*}.ffmeta"
+logfile="$workdir${infileb%.*}.log"
+logofile="$workdir${infileb%.*}.logo.txt"
+txtfile="$workdir${infileb%.*}.txt"
+else
+edlfile="$workdir${infile%.*}.edl"
+metafile="$workdir${infile%.*}.ffmeta"
+logfile="$workdir${infile%.*}.log"
+logofile="$workdir${infile%.*}.logo.txt"
+txtfile="$workdir${infile%.*}.txt"
+fi
 
 if [ ! -f "$edlfile" ]; then
   $comskipPath --ini="$comskipini" "$infile"
