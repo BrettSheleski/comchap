@@ -32,7 +32,7 @@ verbose=false
 lockfile=""
 workdir=""
 
-while [[ $# -gt 1 ]]
+while [[ $# -gt 0 ]]
 do
 key="$1"
 case $key in
@@ -68,8 +68,26 @@ case $key in
     workdir="${key#*=}"
     shift
     ;;
+    -*)
+    echo "Option $1 doesn't exist, please check the documentation"
+    exit 1
+    ;;
     *)
-    break
+    if [ -z $infile ]; then
+      infile=$1
+      if [ ! -f "$infile" ]; then
+        echo "Inputfile '$infile' doesn't exist. Please check."
+        exit 1
+      fi
+    else
+      if [ -z $outfile ]; then
+        outfile=$1
+      else
+        echo "Error: too many parameters. Inputfile and Outputfile already defined. Please check your command."
+        exit 1
+      fi
+    fi
+    shift
     ;;
 esac
 done
@@ -100,12 +118,8 @@ elif ! grep -q "output_edl=1" "$comskipini"; then
   echo "output_edl=1" >> "$comskipini"
 fi
 
-infile=$1
-
-if [[ -z "$2" ]]; then
+if [[ -z "$outfile" ]]; then
   outfile="$infile"
-else
-  outfile="$2"
 fi
 
 outdir=$(dirname "$outfile")
