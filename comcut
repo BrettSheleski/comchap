@@ -214,31 +214,31 @@ do
   rm "$i"
 done
 
-if $deleteedl ; then
+if [ "$deleteedl" == true ] ; then
   if [ -f "$edlfile" ] ; then
     rm "$edlfile";
   fi
 fi
 
-if $deletemeta ; then
+if [ "$deletemeta" == true ] ; then
   if [ -f "$metafile" ]; then
     rm "$metafile";
   fi
 fi
 
-if $deletelog ; then
+if [ "$deletelog" == true ] ; then
   if [ -f "$logfile" ]; then
     rm "$logfile";
   fi
 fi
 
-if $deletelogo ; then
+if [ "$deletelogo" == true ] ; then
   if [ -f "$logofile" ]; then
     rm "$logofile";
   fi
 fi
 
-if $deletetxt ; then
+if [ "$deletetxt" == true ] ; then
   if [ -f "$txtfile" ]; then
     rm "$txtfile";
   fi
