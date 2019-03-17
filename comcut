@@ -68,14 +68,14 @@ case $key in
     exit 1
     ;;
     *)
-    if [ -z $infile ]; then
+    if [ -z "$infile" ]; then
       infile=$1
       if [ ! -f "$infile" ]; then
         echo "Inputfile '$infile' doesn't exist. Please check."
         exit 1
       fi
     else
-      if [ -z $outfile ]; then
+      if [ -z "$outfile" ]; then
         outfile=$1
       else
         echo "Error: too many parameters. Inputfile and Outputfile already defined. Please check your command."
@@ -119,7 +119,7 @@ if [[ ! -z "$workdir" ]]; then
     */)
       ;;
     *)
-      comskipoutput="--output=$workdir"
+      comskipoutput=--output="$workdir"
       workdir="$workdir/"
       ;;
   esac
