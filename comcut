@@ -220,6 +220,8 @@ if $hascommercials ; then
   fi
 
   $ffmpegPath -hide_banner -loglevel error -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
+else
+  exit 73
 fi
 
 for i in "${tempfiles[@]}"
