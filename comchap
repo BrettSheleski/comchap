@@ -16,7 +16,16 @@ if [[ $# -lt 1 ]]; then
   echo "Add chapters to video file using EDL file"
   echo "     (If no EDL file is found, comskip will be used to generate one)"
   echo ""
-  echo "Usage: $exename infile [outfile]"
+  echo "Usage: $exename [options] infile [outfile]"
+  echo "Options:"
+  echo '--mark-time           Add time mark to titles'
+  echo '--keep-edl            Keep the generated EDL file (do not delete when done)'
+  echo '--keep-meta           Keep the generated ffmeta file used to tell ffmpeg where the chapters are located'
+  echo '--ffmpeg=PATH         Use PATH as the path to ffmpeg binary'
+  echo '--comskip=PATH        Use PATH as the path to comskip binary'
+  echo '--comskip-ini=PATH    Use PATH as the path to the comskip.ini file used by Comskip'
+  echo '--lockfile=PATH       Use PATH as a lockfile to prevent multiple instances of the script from running simultaneously'
+  echo '--work-dir            Set working directory, default is to put files in directory of infile'
 
   exit 1
 fi
@@ -28,6 +37,7 @@ deletemeta=true
 deletelog=true
 deletelogo=true
 deletetxt=true
+timemark=false
 verbose=false
 lockfile=""
 workdir=""
@@ -36,6 +46,10 @@ while [[ $# -gt 0 ]]
 do
 key="$1"
 case $key in
+    --mark-time)
+    timemark=true
+    shift
+    ;;
     --keep-edl)
     deleteedl=false
     shift
@@ -169,6 +183,9 @@ do
   ((i++))
 
   end=`awk -vp="${line[0]}" 'BEGIN{printf "%.0f" ,p*1000}'`
+  if (($end < "100")); then 
+    end=100
+  fi
   startnext=`awk -vp="${line[1]}" 'BEGIN{printf "%.0f" ,p*1000}'`
   hascommercials=true
 
@@ -176,24 +193,43 @@ do
   echo TIMEBASE=1/1000 >> "$metafile"
   echo START="$start" >> "$metafile"
   echo END="$end" >> "$metafile"
-  echo "title=Chapter $i" >> "$metafile"
+  mark=" $i"
+  if $mark-time ; then
+    mark=`echo $start | perl -n -e '{$s=int($_/1000+.5);$m=int($s/60);$s-=60*$m;$h=int($m/60);$m-=60*$h;print sprintf("%02d:%02d:%02d",$h,$m,$s);}'`
+    mark=" $i [$mark]"
+  fi
+  echo "title=Chapter$mark" >> "$metafile"
 
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1000 >> "$metafile"
   echo START="$end" >> "$metafile"
   echo END="$startnext" >> "$metafile"
-  echo "title=Commercial $i" >> "$metafile"
+  mark=" $i"
+  if $mark-time ; then
+    mark=`echo $end | perl -n -e '{$s=int($_/1000+.5);$m=int($s/60);$s-=60*$m;$h=int($m/60);$m-=60*$h;print sprintf("%02d:%02d:%02d",$h,$m,$s);}'`
+    mark=" $i [$mark]"
+  fi
+  echo "title=Commercial$mark" >> "$metafile"
 
   start=$startnext
 done < "$edlfile"
 
 if $hascommercials ; then
   ((i++))
+    # find end of file
+  end=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1*3600)+($2*60)+$3 }'| awk '{printf "%.0f",$1*1000}'` 
+    # start no later than 10 seconds before end"
+  start=`echo "$start:$end" | perl -n -e '{($s,$e)=split(":",$_);if($s > $e-10000){$s=$e-10000;};print $s;}'`
   echo [CHAPTER] >> "$metafile"
   echo TIMEBASE=1/1000 >> "$metafile"
   echo START="$start" >> "$metafile"
-  echo END=`$ffmpegPath -i "$infile" 2>&1 | grep Duration | awk '{print $2}' | tr -d , | awk -F: '{ print ($1*3600)+($2*60)+$3 }'| awk '{printf "%.0f",$1*1000}'` >> "$metafile"
-  echo "title=Chapter $i" >> "$metafile"
+  echo END="$end" >> "$metafile"
+  mark=" $i"
+  if $mark-time ; then
+    mark=`echo $start | perl -n -e '{$s=int($_/1000+.5);$m=int($s/60);$s-=60*$m;$h=int($m/60);$m-=60*$h;print sprintf("%02d:%02d:%02d",$h,$m,$s);}'`
+    mark=" $i [$mark]"
+  fi
+  echo "title=Chapter$mark" >> "$metafile"
 
   if [ "$infile" -ef "$outfile" ] ; then
 
