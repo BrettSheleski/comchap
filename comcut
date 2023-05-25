@@ -181,7 +181,7 @@ do
     concat="$concat|$chapterfile"
 
     duration=`echo "$end" "$start" | awk  '{printf "%f", $1 - $2}'`
-    $ffmpegPath -hide_banner -loglevel error -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
+    $ffmpegPath -hide_banner -loglevel error -nostdin -ss "$start" -i "$infile" -t "$duration" -c copy -y "$chapterfile"
 
     totalcutduration=`echo "$totalcutduration" "$startnext" "$end" | awk  '{print $1 + $2 - $3}'`
 
@@ -216,7 +216,7 @@ if $hascommercials ; then
     concat="$concat|$chapterfile"
 
     duration=`echo "$end" "$start" | awk  '{printf "%f", $1 - $2}'`
-    $ffmpegPath -hide_banner -loglevel error -nostdin -i "$infile" -ss "$start" -t "$duration" -c copy -y "$chapterfile"
+    $ffmpegPath -hide_banner -loglevel error -nostdin -ss "$start" -i "$infile" -t "$duration" -c copy -y "$chapterfile"
   fi
 
   $ffmpegPath -hide_banner -loglevel error -nostdin -i "$metafile" -i "concat:${concat:1}" -c copy -map_metadata 0 -y "$outfile"
